@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import plotly.express as px
+from pathlib import Path
 
 px.defaults.template = "simple_white"
 px.defaults.color_continuous_scale = px.colors.sequential.Tealgrn
@@ -11,6 +12,7 @@ PLOT_CONFIG = {
     "modeBarButtonsToRemove": ["autoScale2d"],
     "scrollZoom": True,
 }
+XLSX_PATH = Path(__file__).parent / "PERFIL_CUSTOS.xlsx"
 
 
 def format_decimal_br(value: float) -> str:
@@ -34,7 +36,11 @@ st.set_page_config(page_title="Dashboard - PERFIL | PAINEL | CUSTO", layout="wid
 # Leitura e limpeza
 # =========================
 @st.cache_data
-def load_all(xlsx_file):
+def load_all():
+    xlsx_file = XLSX_PATH
+    if not xlsx_file.exists():
+        raise FileNotFoundError("Arquivo PERFIL_CUSTOS.xlsx não encontrado no repositório.")
+
     # --- PERFIL ---
     perfil_raw = pd.read_excel(xlsx_file, sheet_name="PERFIL", engine="openpyxl")
     perfil_raw.columns = [c.strip() for c in perfil_raw.columns]
@@ -113,12 +119,11 @@ def load_all(xlsx_file):
 # =========================
 st.title("Dashboard – PERFIL | PAINEL | CUSTO")
 
-uploaded = st.sidebar.file_uploader("Envie o .xlsx", type=["xlsx"])
-if not uploaded:
-    st.info("Envie a planilha para carregar o dashboard.")
+try:
+    perfil, painel_matrix, painel_long, custo, base, oms = load_all()
+except FileNotFoundError as e:
+    st.error(str(e))
     st.stop()
-
-perfil, painel_matrix, painel_long, custo, base, oms = load_all(uploaded)
 
 st.sidebar.subheader("Filtros")
 
