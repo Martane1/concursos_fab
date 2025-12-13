@@ -188,7 +188,6 @@ def load_all():
     num_cols = [
         "VENC BÁSICO", "GDPGPE", "REMUN INDIV", "ENC. SOCIAIS/A", "AUX ALIM", "AUX TRANS",
         "CUSTO MENSAL", "CUSTO 12 MESES", "GRAT. NATALINA", "AD. FÉRIAS", "ENC. SOCIAIS/B",
-        "ENCARGOS SOCIAS B", "ENCARGOS SOCIAS B.1", "ENCARGOS SOCIAS B.2",
         "CUSTO ANUAL INDIV", "CUSTO ANUAL TOTAL"
     ]
     for c in num_cols:
@@ -203,8 +202,7 @@ def load_all():
     custo_merge_cols = ["PROFISSIONAIS", "NÍVEL"] + [
         c for c in [
             "VENC BÁSICO", "GDPGPE", "REMUN INDIV", "ENC. SOCIAIS/A", "AUX ALIM", "AUX TRANS",
-            "CUSTO MENSAL", "CUSTO 12 MESES", "GRAT. NATALINA", "AD. FÉRIAS",
-            "ENC. SOCIAIS/B", "ENCARGOS SOCIAS B", "ENCARGOS SOCIAS B.1", "ENCARGOS SOCIAS B.2",
+            "CUSTO MENSAL", "CUSTO 12 MESES", "GRAT. NATALINA", "AD. FÉRIAS", "ENC. SOCIAIS/B",
             "CUSTO ANUAL INDIV", "CUSTO ANUAL TOTAL"
         ] if c in custo.columns
     ]
@@ -264,8 +262,7 @@ total_custo_a = float(f["CUSTO_ANUAL_OM"].fillna(0).sum())
 
 cost_cols = [
     "VENC BÁSICO", "GDPGPE", "REMUN INDIV", "ENC. SOCIAIS/A", "AUX ALIM", "AUX TRANS",
-    "CUSTO MENSAL", "CUSTO 12 MESES", "GRAT. NATALINA", "AD. FÉRIAS",
-    "ENC. SOCIAIS/B", "ENCARGOS SOCIAS B",
+    "CUSTO MENSAL", "CUSTO 12 MESES", "GRAT. NATALINA", "AD. FÉRIAS", "ENC. SOCIAIS/B",
     "CUSTO ANUAL INDIV", "CUSTO ANUAL TOTAL"
 ]
 cost_totals = {
@@ -286,7 +283,7 @@ metric_items = [
     ("Custo 12 Meses (R$)", f"{cost_totals['CUSTO 12 MESES']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
     ("Gratificação Natalina (R$)", f"{cost_totals['GRAT. NATALINA']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
     ("Adicional de Férias (R$)", f"{cost_totals['AD. FÉRIAS']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
-    ("Encargos Sociais B (R$)", f"{cost_totals['ENCARGOS SOCIAS B']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
+    ("Enc. Sociais/B (R$)", f"{cost_totals['ENC. SOCIAIS/B']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
     ("Custo Anual Individual (R$)", f"{cost_totals['CUSTO ANUAL INDIV']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
     ("Custo Anual Total (R$)", f"{cost_totals['CUSTO ANUAL TOTAL']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
 ]
@@ -478,7 +475,7 @@ with t3:
     custo_cols_order = [
         "PROFISSIONAIS", "NÍVEL", "QTD", "VENC BÁSICO", "GDPGPE", "REMUN INDIV",
         "ENC. SOCIAIS/A", "AUX ALIM", "AUX TRANS", "CUSTO MENSAL", "CUSTO 12 MESES",
-        "GRAT. NATALINA", "AD. FÉRIAS", "ENCARGOS SOCIAS B", "CUSTO ANUAL INDIV", "CUSTO ANUAL TOTAL"
+        "GRAT. NATALINA", "AD. FÉRIAS", "ENC. SOCIAIS/B", "CUSTO ANUAL INDIV", "CUSTO ANUAL TOTAL"
     ]
     custo_view = custo[[c for c in custo_cols_order if c in custo.columns]]
     st.dataframe(style_decimal_df(custo_view), use_container_width=True)
