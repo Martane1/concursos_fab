@@ -38,6 +38,7 @@ def inject_styles():
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
         :root {
+            color-scheme: light;
             --bg-main: #f8fafc;
             --card: #ffffff;
             --stroke: rgba(15,23,42,0.08);
@@ -47,6 +48,10 @@ def inject_styles():
             --muted: #475467;
         }
         * { font-family: 'Space Grotesk', 'Segoe UI', sans-serif; }
+        html, body {
+            background: var(--bg-main);
+            color: var(--text);
+        }
         .stApp {
             background:
                 radial-gradient(circle at 12% 18%, rgba(14,165,233,0.08), transparent 28%),
