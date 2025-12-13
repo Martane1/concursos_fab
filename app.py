@@ -6,11 +6,6 @@ from pathlib import Path
 
 px.defaults.template = "simple_white"
 px.defaults.color_continuous_scale = px.colors.sequential.Tealgrn
-px.defaults.update(
-    font=dict(family="Space Grotesk, 'Segoe UI', sans-serif", size=13, color="#0f172a"),
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(0,0,0,0)",
-)
 PLOT_CONFIG = {
     "displaylogo": False,
     "toImageButtonOptions": {"filename": "dashboard-concursos"},
@@ -192,7 +187,8 @@ def load_all():
     # Converte colunas numéricas principais
     num_cols = [
         "VENC BÁSICO", "GDPGPE", "REMUN INDIV", "ENC. SOCIAIS/A", "AUX ALIM", "AUX TRANS",
-        "CUSTO MENSAL", "CUSTO 12 MESES", "GRAT. NATALINA", "AD. FÉRIAS", "ENC. SOCIAIS/B ",
+        "CUSTO MENSAL", "CUSTO 12 MESES", "GRAT. NATALINA", "AD. FÉRIAS", "ENC. SOCIAIS/B",
+        "ENCARGOS SOCIAS B", "ENCARGOS SOCIAS B.1", "ENCARGOS SOCIAS B.2",
         "CUSTO ANUAL INDIV", "CUSTO ANUAL TOTAL"
     ]
     for c in num_cols:
@@ -204,8 +200,16 @@ def load_all():
     custo = custo.reset_index(drop=True)
 
     # --- Merge PAINEL x CUSTO para custo por OM ---
+    custo_merge_cols = ["PROFISSIONAIS", "NÍVEL"] + [
+        c for c in [
+            "VENC BÁSICO", "GDPGPE", "REMUN INDIV", "ENC. SOCIAIS/A", "AUX ALIM", "AUX TRANS",
+            "CUSTO MENSAL", "CUSTO 12 MESES", "GRAT. NATALINA", "AD. FÉRIAS",
+            "ENC. SOCIAIS/B", "ENCARGOS SOCIAS B", "ENCARGOS SOCIAS B.1", "ENCARGOS SOCIAS B.2",
+            "CUSTO ANUAL INDIV", "CUSTO ANUAL TOTAL"
+        ] if c in custo.columns
+    ]
     base = painel_long.merge(
-        custo[["PROFISSIONAIS", "NÍVEL", "CUSTO MENSAL", "CUSTO ANUAL INDIV"]],
+        custo[custo_merge_cols],
         on="PROFISSIONAIS",
         how="left",
     )
@@ -227,33 +231,70 @@ except FileNotFoundError as e:
 
 st.sidebar.subheader("Filtros")
 
-sel_om = st.sidebar.multiselect("OM", oms, default=oms)
+oms = ["TODOS"] + oms
+sel_om = st.sidebar.multiselect("OM", oms, default=["TODOS"])
 nivels = sorted([x for x in base["NÍVEL"].dropna().unique()])
-sel_nivel = st.sidebar.multiselect("NÍVEL", nivels, default=nivels)
+nivels = ["TODOS"] + nivels
+sel_nivel = st.sidebar.multiselect("NÍVEL", nivels, default=["TODOS"])
 
 profs = sorted([x for x in base["PROFISSIONAIS"].dropna().unique()])
-sel_prof = st.sidebar.multiselect("PROFISSIONAIS", profs, default=profs)
+profs = ["TODOS"] + profs
+sel_prof = st.sidebar.multiselect("PROFISSIONAIS", profs, default=["TODOS"])
 
-f = base[
-    (base["OM"].isin(sel_om)) &
-    (base["NÍVEL"].isin(sel_nivel)) &
-    (base["PROFISSIONAIS"].isin(sel_prof))
-].copy()
+sel_om_values = [om for om in sel_om if om != "TODOS"]
+sel_nivel_values = [n for n in sel_nivel if n != "TODOS"]
+sel_prof_values = [p for p in sel_prof if p != "TODOS"]
+
+mask = pd.Series(True, index=base.index)
+if sel_om_values:
+    mask &= base["OM"].isin(sel_om_values)
+if sel_nivel_values:
+    mask &= base["NÍVEL"].isin(sel_nivel_values)
+if sel_prof_values:
+    mask &= base["PROFISSIONAIS"].isin(sel_prof_values)
+
+f = base[mask].copy()
 
 # =========================
 # KPIs
 # =========================
-k1, k2, k3, k4 = st.columns(4)
-
 total_qtd = int(f["QTD_OM"].sum())
 total_custo_m = float(f["CUSTO_MENSAL_OM"].fillna(0).sum())
 total_custo_a = float(f["CUSTO_ANUAL_OM"].fillna(0).sum())
-custo_medio_anual = (total_custo_a / total_qtd) if total_qtd else 0.0
 
-k1.metric("Efetivo (QTD)", f"{total_qtd:,}".replace(",", "."))
-k2.metric("Custo Mensal (R$)", f"{total_custo_m:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-k3.metric("Custo Anual (R$)", f"{total_custo_a:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-k4.metric("Custo Anual Médio por Pessoa (R$)", f"{custo_medio_anual:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+cost_cols = [
+    "VENC BÁSICO", "GDPGPE", "REMUN INDIV", "ENC. SOCIAIS/A", "AUX ALIM", "AUX TRANS",
+    "CUSTO MENSAL", "CUSTO 12 MESES", "GRAT. NATALINA", "AD. FÉRIAS",
+    "ENC. SOCIAIS/B", "ENCARGOS SOCIAS B",
+    "CUSTO ANUAL INDIV", "CUSTO ANUAL TOTAL"
+]
+cost_totals = {
+    col: float((f[col].fillna(0) * f["QTD_OM"]).sum()) if col in f.columns else 0.0
+    for col in cost_cols
+}
+cost_totals["CUSTO MENSAL"] = total_custo_m
+cost_totals["CUSTO ANUAL TOTAL"] = total_custo_a
+
+metric_items = [
+    ("Efetivo (QTD)", f"{total_qtd:,}".replace(",", ".")),
+    ("Vencimento Básico (R$)", f"{cost_totals['VENC BÁSICO']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
+    ("GDPGPE (R$)", f"{cost_totals['GDPGPE']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
+    ("Remuneração Individual (R$)", f"{cost_totals['REMUN INDIV']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
+    ("Enc. Sociais/A (R$)", f"{cost_totals['ENC. SOCIAIS/A']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
+    ("Auxílio Alimentação (R$)", f"{cost_totals['AUX ALIM']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
+    ("Custo Mensal (R$)", f"{cost_totals['CUSTO MENSAL']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
+    ("Custo 12 Meses (R$)", f"{cost_totals['CUSTO 12 MESES']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
+    ("Gratificação Natalina (R$)", f"{cost_totals['GRAT. NATALINA']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
+    ("Adicional de Férias (R$)", f"{cost_totals['AD. FÉRIAS']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
+    ("Encargos Sociais B (R$)", f"{cost_totals['ENCARGOS SOCIAS B']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
+    ("Custo Anual Individual (R$)", f"{cost_totals['CUSTO ANUAL INDIV']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
+    ("Custo Anual Total (R$)", f"{cost_totals['CUSTO ANUAL TOTAL']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")),
+]
+
+for i in range(0, len(metric_items), 4):
+    cols = st.columns(4)
+    for col, (label, value) in zip(cols, metric_items[i:i+4]):
+        col.metric(label, value)
 
 st.divider()
 
@@ -273,6 +314,15 @@ with c1:
         color="CUSTO_ANUAL_OM",
         text="CUSTO_ANUAL_OM",
         color_continuous_scale=px.colors.sequential.Tealgrn,
+    )
+    fig.update_layout(
+        font=dict(
+            family="Space Grotesk, Segoe UI, sans-serif",
+            size=13,
+            color="#0f172a"
+        ),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
     )
     fig.update_traces(
         hovertemplate="<b>%{y}</b><br>Custo anual: R$ %{x:,.2f}<extra></extra>",
@@ -299,6 +349,15 @@ with c2:
         color="QTD_OM",
         text="QTD_OM",
         color_continuous_scale=px.colors.sequential.Blues,
+    )
+    fig2.update_layout(
+        font=dict(
+            family="Space Grotesk, Segoe UI, sans-serif",
+            size=13,
+            color="#0f172a"
+        ),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
     )
     fig2.update_traces(
         hovertemplate="<b>%{x}</b><br>Efetivo: %{y:,}<extra></extra>",
@@ -327,6 +386,15 @@ with c3:
         text="CUSTO_ANUAL_OM",
         color_continuous_scale=px.colors.sequential.Tealgrn,
     )
+    fig3.update_layout(
+        font=dict(
+            family="Space Grotesk, Segoe UI, sans-serif",
+            size=13,
+            color="#0f172a"
+        ),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+    )
     fig3.update_traces(
         hovertemplate="<b>%{y}</b><br>Custo anual: R$ %{x:,.2f}<extra></extra>",
         texttemplate="R$ %{x:,.2f}",
@@ -345,28 +413,45 @@ with c3:
 
 with c4:
     st.subheader("Distribuição por Nível")
-    g4 = f.groupby("NÍVEL", dropna=False).agg(QTD=("QTD_OM","sum"), CUSTO_ANUAL=("CUSTO_ANUAL_OM","sum")).reset_index()
-    fig4 = px.scatter(
+    g4 = (
+        f.groupby("NÍVEL", dropna=False)
+        .agg(QTD=("QTD_OM","sum"), CUSTO_ANUAL=("CUSTO_ANUAL_OM","sum"))
+        .reset_index()
+        .sort_values("CUSTO_ANUAL", ascending=False)
+    )
+    fig4 = px.bar(
         g4,
-        x="NÍVEL",
-        y="CUSTO_ANUAL",
-        size="QTD",
+        y="NÍVEL",
+        x="CUSTO_ANUAL",
+        orientation="h",
         color="QTD",
-        size_max=45,
+        text="QTD",
         color_continuous_scale=px.colors.sequential.Blues,
         custom_data=["QTD"],
     )
+    fig4.update_layout(
+        font=dict(
+            family="Space Grotesk, Segoe UI, sans-serif",
+            size=13,
+            color="#0f172a"
+        ),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+    )
     fig4.update_traces(
-        hovertemplate="Nível: %{x}<br>Custo anual: R$ %{y:,.2f}<br>Efetivo: %{customdata[0]:,}<extra></extra>",
+        hovertemplate="<b>%{y}</b><br>Custo anual: R$ %{x:,.2f}<br>Efetivo: %{customdata[0]:,}<extra></extra>",
         marker_line_color="#1f3b57",
-        marker_line_width=0.6,
+        marker_line_width=0.8,
+        texttemplate="%{text:,}",
+        textposition="outside",
     )
     fig4.update_layout(
-        xaxis_title="Nível",
-        yaxis_title="Custo anual (R$)",
-        hovermode="x unified",
+        xaxis_title="Custo anual (R$)",
+        yaxis_title=None,
+        hovermode="y unified",
         coloraxis_showscale=False,
         showlegend=False,
+        bargap=0.25,
     )
     st.plotly_chart(fig4, use_container_width=True, config=PLOT_CONFIG)
 
@@ -390,7 +475,13 @@ with t2:
     st.dataframe(style_decimal_df(painel_matrix), use_container_width=True)
 
 with t3:
-    st.dataframe(style_decimal_df(custo), use_container_width=True)
+    custo_cols_order = [
+        "PROFISSIONAIS", "NÍVEL", "QTD", "VENC BÁSICO", "GDPGPE", "REMUN INDIV",
+        "ENC. SOCIAIS/A", "AUX ALIM", "AUX TRANS", "CUSTO MENSAL", "CUSTO 12 MESES",
+        "GRAT. NATALINA", "AD. FÉRIAS", "ENCARGOS SOCIAS B", "CUSTO ANUAL INDIV", "CUSTO ANUAL TOTAL"
+    ]
+    custo_view = custo[[c for c in custo_cols_order if c in custo.columns]]
+    st.dataframe(style_decimal_df(custo_view), use_container_width=True)
 
 with t4:
     cols = ["OM","PROFISSIONAIS","NÍVEL","QTD_OM","CUSTO MENSAL","CUSTO ANUAL INDIV","CUSTO_MENSAL_OM","CUSTO_ANUAL_OM"]
@@ -408,8 +499,8 @@ with t5:
         perfil_cargo = perfil[perfil["CARGOS"] == cargo_sel].copy()
         base_cargo = base[
             (base["PROFISSIONAIS"] == cargo_sel) &
-            (base["OM"].isin(sel_om)) &
-            (base["NÍVEL"].isin(sel_nivel))
+            ((base["OM"].isin(sel_om_values)) if sel_om_values else True) &
+            ((base["NÍVEL"].isin(sel_nivel_values)) if sel_nivel_values else True)
         ].copy()
 
         # Painel consolidado por OM que solicitou o cargo
