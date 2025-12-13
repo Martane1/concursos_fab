@@ -6,6 +6,11 @@ from pathlib import Path
 
 px.defaults.template = "simple_white"
 px.defaults.color_continuous_scale = px.colors.sequential.Tealgrn
+px.defaults.update(
+    font=dict(family="Space Grotesk, 'Segoe UI', sans-serif", size=13, color="#0f172a"),
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+)
 PLOT_CONFIG = {
     "displaylogo": False,
     "toImageButtonOptions": {"filename": "dashboard-concursos"},
@@ -30,7 +35,102 @@ def style_decimal_df(df: pd.DataFrame):
     fmt = {col: (lambda x: format_decimal_br(x) if pd.notna(x) else "") for col in float_cols}
     return df.style.format(fmt)
 
+
+def inject_styles():
+    """Aplica tema visual mais profissional ao app."""
+    st.markdown(
+        """
+        <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+        :root {
+            --bg-main: #f8fafc;
+            --card: #ffffff;
+            --stroke: rgba(15,23,42,0.08);
+            --primary: #0f766e;
+            --accent: #0ea5e9;
+            --text: #0f172a;
+            --muted: #475467;
+        }
+        * { font-family: 'Space Grotesk', 'Segoe UI', sans-serif; }
+        .stApp {
+            background:
+                radial-gradient(circle at 12% 18%, rgba(14,165,233,0.08), transparent 28%),
+                radial-gradient(circle at 88% 12%, rgba(16,185,129,0.08), transparent 24%),
+                var(--bg-main);
+        }
+        [data-testid="stAppViewContainer"] > .main {
+            padding-top: 1rem;
+            padding-left: 1.2rem;
+            padding-right: 1.2rem;
+        }
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #0b172a, #0b2f2a);
+            color: #e2e8f0;
+        }
+        [data-testid="stSidebar"] * {
+            color: #e2e8f0 !important;
+        }
+        [data-testid="stSidebar"] .stMultiSelect, [data-testid="stSidebar"] .stSelectbox {
+            background: rgba(255,255,255,0.06);
+        }
+        div[data-testid="stMetric"] {
+            background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(14,165,233,0.10));
+            border: 1px solid var(--stroke);
+            padding: 14px 16px;
+            border-radius: 16px;
+            box-shadow: 0 16px 45px rgba(15,23,42,0.12);
+        }
+        div[data-testid="stMetricLabel"] {
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+        div[data-testid="stMetricValue"] {
+            color: var(--text);
+            font-weight: 800;
+            font-size: 1.9rem;
+        }
+        div[data-testid="stPlotlyChart"] {
+            background: var(--card);
+            border: 1px solid var(--stroke);
+            border-radius: 16px;
+            padding: 8px 8px 4px;
+            box-shadow: 0 14px 40px rgba(15,23,42,0.08);
+        }
+        [data-testid="stDataFrame"] {
+            background: var(--card);
+            border: 1px solid var(--stroke);
+            border-radius: 14px;
+            box-shadow: 0 12px 36px rgba(15,23,42,0.06);
+        }
+        button[role="tab"] {
+            background: var(--card);
+            color: var(--text);
+            border: 1px solid var(--stroke);
+            border-radius: 12px !important;
+            padding: 0.6rem 0.9rem;
+            box-shadow: 0 8px 20px rgba(15,23,42,0.06);
+            margin-right: 8px;
+        }
+        button[role="tab"][aria-selected="true"] {
+            background: linear-gradient(120deg, #0f766e, #0ea5e9);
+            color: #f8fafc;
+            border: 1px solid transparent;
+            box-shadow: 0 12px 32px rgba(14,165,233,0.25);
+        }
+        h1, h2, h3, h4, h5 {
+            color: var(--text);
+            letter-spacing: -0.02em;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
 st.set_page_config(page_title="Dashboard - PERFIL | PAINEL | CUSTO", layout="wide")
+inject_styles()
 
 # =========================
 # Leitura e limpeza
