@@ -24,6 +24,7 @@ def format_decimal_br(value: float) -> str:
 
 def style_decimal_df(df: pd.DataFrame):
     """Mantém apenas duas casas decimais nas colunas float ao exibir no Streamlit."""
+    df = df.reset_index(drop=True)
     float_cols = df.select_dtypes(include=["float", "float64", "float32"]).columns
     fmt = {col: (lambda x: format_decimal_br(x) if pd.notna(x) else "") for col in float_cols} if len(float_cols) else {}
     styler = df.style.format(fmt)
