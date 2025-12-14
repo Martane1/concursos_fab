@@ -224,7 +224,7 @@ def load_all():
 # =========================
 # UI
 # =========================
-st.title("Dashboard – PERFIL | PAINEL | CUSTO")
+st.title("PAINEL - ANÁLISE DE PERFIL E CUSTO DE PESSOAL")
 
 try:
     perfil, painel_matrix, painel_long, custo, base, oms = load_all()
