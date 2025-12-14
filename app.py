@@ -376,8 +376,8 @@ with c2:
 c3, c4 = st.columns(2)
 
 with c3:
-    st.subheader("Top 15 – Custo Anual por Profissional (somando OMs)")
-    g3 = f.groupby("PROFISSIONAIS", dropna=False)["CUSTO_ANUAL_OM"].sum().reset_index().sort_values("CUSTO_ANUAL_OM", ascending=False).head(15)
+    st.subheader("Custo Anual por Profissional (somando OMs)")
+    g3 = f.groupby("PROFISSIONAIS", dropna=False)["CUSTO_ANUAL_OM"].sum().reset_index().sort_values("CUSTO_ANUAL_OM", ascending=False)
     fig3 = px.bar(
         g3,
         y="PROFISSIONAIS",
