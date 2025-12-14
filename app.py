@@ -25,10 +25,9 @@ def format_decimal_br(value: float) -> str:
 def style_decimal_df(df: pd.DataFrame):
     """Mantém apenas duas casas decimais nas colunas float ao exibir no Streamlit."""
     float_cols = df.select_dtypes(include=["float", "float64", "float32"]).columns
-    if not len(float_cols):
-        return df
-    fmt = {col: (lambda x: format_decimal_br(x) if pd.notna(x) else "") for col in float_cols}
-    return df.style.format(fmt)
+    fmt = {col: (lambda x: format_decimal_br(x) if pd.notna(x) else "") for col in float_cols} if len(float_cols) else {}
+    styler = df.style.format(fmt)
+    return styler.hide(axis="index")
 
 
 def inject_styles():
@@ -408,7 +407,8 @@ with c3:
         hovermode="y unified",
         coloraxis_showscale=False,
         bargap=0.3,
-        height=520,
+        height=680,
+        margin=dict(l=70, r=40, t=50, b=60),
     )
     st.plotly_chart(fig3, use_container_width=True, config=PLOT_CONFIG)
 
@@ -453,6 +453,8 @@ with c4:
         coloraxis_showscale=False,
         showlegend=False,
         bargap=0.25,
+        height=680,
+        margin=dict(l=70, r=40, t=50, b=60),
     )
     st.plotly_chart(fig4, use_container_width=True, config=PLOT_CONFIG)
 
