@@ -23,12 +23,27 @@ def format_decimal_br(value: float) -> str:
 
 
 def style_decimal_df(df: pd.DataFrame):
-    """Mantém apenas duas casas decimais nas colunas float ao exibir no Streamlit."""
-    df = df.reset_index(drop=True)
+    """
+    Formata decimais e OCULTA COMPLETAMENTE o índice
+    sem alterar dados ou causar regressões.
+    """
+    df = df.copy().reset_index(drop=True)
+
     float_cols = df.select_dtypes(include=["float", "float64", "float32"]).columns
-    fmt = {col: (lambda x: format_decimal_br(x) if pd.notna(x) else "") for col in float_cols} if len(float_cols) else {}
+    fmt = {
+        col: (lambda x: format_decimal_br(x) if pd.notna(x) else "")
+        for col in float_cols
+    } if len(float_cols) else {}
+
     styler = df.style.format(fmt)
-    return styler.hide(axis="index")
+
+    # Blindagem total contra variações de pandas
+    if hasattr(styler, "hide"):
+        styler = styler.hide(axis="index")
+    elif hasattr(styler, "hide_index"):
+        styler = styler.hide_index()
+
+    return styler
 
 
 def inject_styles():
@@ -473,10 +488,10 @@ t1, t2, t3, t4, t5 = st.tabs([
 ])
 
 with t1:
-    st.dataframe(style_decimal_df(perfil), use_container_width=True)
+    st.dataframe(style_decimal_df(perfil), use_container_width=True, hide_index=True)
 
 with t2:
-    st.dataframe(style_decimal_df(painel_matrix), use_container_width=True)
+    st.dataframe(style_decimal_df(painel_matrix), use_container_width=True, hide_index=True)
 
 with t3:
     custo_cols_order = [
@@ -485,12 +500,12 @@ with t3:
         "GRAT. NATALINA", "AD. FÉRIAS", "ENC. SOCIAIS/B", "CUSTO ANUAL TOTAL"
     ]
     custo_view = custo[[c for c in custo_cols_order if c in custo.columns]]
-    st.dataframe(style_decimal_df(custo_view), use_container_width=True)
+    st.dataframe(style_decimal_df(custo_view), use_container_width=True, hide_index=True)
 
 with t4:
     cols = ["OM","PROFISSIONAIS","NÍVEL","QTD_OM","CUSTO MENSAL","CUSTO ANUAL INDIV","CUSTO_MENSAL_OM","CUSTO_ANUAL_OM"]
     cols = [c for c in cols if c in f.columns]
-    st.dataframe(style_decimal_df(f[cols].sort_values(["OM","PROFISSIONAIS"])), use_container_width=True)
+    st.dataframe(style_decimal_df(f[cols].sort_values(["OM","PROFISSIONAIS"])), use_container_width=True, hide_index=True)
 
 with t5:
     st.subheader("Visão por Cargo")
@@ -523,6 +538,7 @@ with t5:
                 st.dataframe(
                     style_decimal_df(om_pedidos),
                     use_container_width=True,
+                    hide_index=True,
                 )
 
         with c_perfil:
@@ -531,4 +547,4 @@ with t5:
                 st.info("Sem perfil cadastrado para este cargo.")
             else:
                 cols_show = [c for c in ["OM", "NÍVEL", "ATIVIDADE", "REQUESITOS", "QTD"] if c in perfil_cargo.columns]
-                st.dataframe(perfil_cargo[cols_show], use_container_width=True)
+                st.dataframe(style_decimal_df(perfil_cargo[cols_show]), use_container_width=True, hide_index=True)
