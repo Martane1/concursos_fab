@@ -218,6 +218,16 @@ def load_all():
 
     custo = custo.reset_index(drop=True)
 
+    # Enriquecimento: remuneração individual no PERFIL (match por cargo/profissional)
+    if {"CARGOS"} <= set(perfil.columns) and {"PROFISSIONAIS", "REMUN INDIV"} <= set(custo.columns):
+        remun_map = custo[["PROFISSIONAIS", "REMUN INDIV"]].dropna(subset=["PROFISSIONAIS"])
+        remun_map["PROFISSIONAIS"] = remun_map["PROFISSIONAIS"].astype(str).str.strip()
+        perfil = perfil.merge(
+            remun_map.rename(columns={"PROFISSIONAIS": "CARGOS"}),
+            on="CARGOS",
+            how="left",
+        )
+
     # --- Merge PAINEL x CUSTO para custo por OM ---
     custo_merge_cols = ["PROFISSIONAIS", "NÍVEL"] + [
         c for c in [
@@ -488,7 +498,8 @@ t1, t2, t3, t4, t5 = st.tabs([
 ])
 
 with t1:
-    st.dataframe(style_decimal_df(perfil), use_container_width=True, hide_index=True)
+    perfil_cols_view = [c for c in ["OM", "CARGOS", "NÍVEL", "ATIVIDADE", "REQUESITOS", "REMUN INDIV", "QTD"] if c in perfil.columns]
+    st.dataframe(style_decimal_df(perfil[perfil_cols_view]), use_container_width=True, hide_index=True)
 
 with t2:
     st.dataframe(style_decimal_df(painel_matrix), use_container_width=True, hide_index=True)
@@ -546,5 +557,5 @@ with t5:
             if perfil_cargo.empty:
                 st.info("Sem perfil cadastrado para este cargo.")
             else:
-                cols_show = [c for c in ["OM", "NÍVEL", "ATIVIDADE", "REQUESITOS", "QTD"] if c in perfil_cargo.columns]
+                cols_show = [c for c in ["OM", "NÍVEL", "ATIVIDADE", "REQUESITOS", "REMUN INDIV", "QTD"] if c in perfil_cargo.columns]
                 st.dataframe(style_decimal_df(perfil_cargo[cols_show]), use_container_width=True, hide_index=True)
