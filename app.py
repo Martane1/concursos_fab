@@ -212,7 +212,7 @@ def load_all():
     ]
     for c in num_cols:
         if c in custo.columns:
-            custo[c] = pd.to_numeric(custo[c], errors="coerce").round(2)
+            custo[c] = pd.to_numeric(custo[c], errors="coerce")
     if "QTD" in custo.columns:
         custo["QTD"] = pd.to_numeric(custo["QTD"], errors="coerce").astype("Int64")
 
@@ -241,8 +241,8 @@ def load_all():
         on="PROFISSIONAIS",
         how="left",
     )
-    base["CUSTO_MENSAL_OM"] = (base["QTD_OM"] * base["CUSTO MENSAL"]).round(2)
-    base["CUSTO_ANUAL_OM"] = (base["QTD_OM"] * base["CUSTO ANUAL INDIV"]).round(2)
+    base["CUSTO_MENSAL_OM"] = base["QTD_OM"] * base["CUSTO MENSAL"]
+    base["CUSTO_ANUAL_OM"] = base["QTD_OM"] * base["CUSTO ANUAL INDIV"]
 
     return perfil, data, painel_long, custo, base, [om for _, om in om_cols]
 
